@@ -24,12 +24,12 @@ test('HTML・manifest・アイコンが公開フォルダー内の相対参照�
     const response = await resource(icon.src); assert.ok(response.headers.get('content-type')?.includes('image/png'));
   }
 });
-test('全30件のPWA資材・モジュール参照・JavaScriptの配信形式を確認', async () => {
+test('全32件のPWA資材・モジュール参照・JavaScriptの配信形式を確認', async () => {
   const sw = await textResource('sw.js');
   const assetBlock = sw.match(/const ASSETS = \[([\s\S]*?)\];/);
   assert.ok(assetBlock);
   const assets = [...assetBlock[1].matchAll(/'([^']+)'/g)].map(match => match[1]);
-  assert.equal(assets.length, 30);
+  assert.equal(assets.length, 32);
   const assetURLs = new Set(assets.map(asset => new URL(asset, root).href));
   for (const asset of assets) {
     const response = await resource(asset);

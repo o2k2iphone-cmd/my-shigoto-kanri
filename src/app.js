@@ -10,6 +10,7 @@ import { schedulePage } from './ui/schedule.js';
 import { otherPage } from './ui/other.js';
 import { alerts } from './ui/alerts.js';
 import { itemDetail, itemForm } from './ui/item-detail.js';
+import { plannerForm } from './ui/planner-import.js';
 import { memberDetail, memberForm } from './ui/members.js';
 import { reservationDetail, reservationForm } from './ui/reservations.js';
 import { showDialog, closeDialog, submitForm, errorArea } from './ui/dialog.js';
@@ -75,6 +76,17 @@ function editMember(memberId) {
   const { form, read } = memberForm(existing, ui.memberDate, ui.memberGroup);
   form.addEventListener('submit', event => { event.preventDefault(); submitForm(form, async () => { const member = read(); await mutate(current => saveMember(current, member, existing?.updatedAt), 'メンバーと予定を保存しました'); closeDialog(true); }); });
 }
+function registerFromPlanner() {
+  const { form, read } = plannerForm(state.settings);
+  form.addEventListener('submit', event => {
+    event.preventDefault();
+    submitForm(form, async () => {
+      const item = read();
+      await mutate(current => saveItem(current, item), 'Plannerの内容を登録しました');
+      closeDialog(true);
+    });
+  });
+}
 function editReservation(reservationId) {
   const existing = reservationId ? state.reservations.find(r => r.id === reservationId) : null;
   if (reservationId && !existing) throw new Error('この予約は削除されています。');
@@ -123,6 +135,7 @@ async function handleClick(event) {
   const data = target.dataset;
   try {
     if (data.cancel !== undefined) return closeDialog();
+    if (data.plannerImport !== undefined) return registerFromPlanner();
     if (data.newItem) return editItem(null, { type: data.newItem, dueDate: data.defaultDate || (data.newItem === 'task' ? dateKey() : null) });
     if (data.detail) return itemDetail(state.items.find(item => item.id === data.detail));
     if (data.editItem) return editItem(data.editItem);

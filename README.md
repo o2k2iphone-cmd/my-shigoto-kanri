@@ -147,6 +147,35 @@ PWAの仕様参考：[MDN・PWAのインストール要件](https://developer.mo
 
 Teamsの本文は手動でコピーし、タイトル・メモ本文に貼り付けます。TeamsリンクはTeamsの「リンクをコピー」から貼り付けます。現バージョンはTeamsへのメッセージ取得・送信・認証要求を行いません。
 
+### Plannerから登録
+
+管理画面の **「Plannerから登録」** から、Planner経由の情報も通常の管理データとして登録できます。Microsoft Graphへの接続は行いません。
+
+1. Teamsのメッセージの「…」から「Plannerタスクを作成」を使い、Plannerにタスクを残します。
+2. Plannerのタスク名・メモをコピーします。期限と元Teamsリンクも確認しておきます。
+3. MY仕事管理の「Plannerから登録」を開き、「まとめて貼り付け」へ貼り付けて **「空欄に取り込む」** を押します。対応ブラウザでは **「クリップボードから取り込む」** でも入力できます。読み取りが制限された場合は手動で貼り付けます。
+4. タイトル・期限・メモ・Teamsリンク・種類を確認して保存します。各項目へ直接入力しても登録できます。期限付き作業だけは期限必須です。メモ・あとで確認・アーカイブ保管は期限なしでも登録できます。
+
+コピーする本文の例：
+
+```text
+資料提出
+期限：2026-10-03 18:00
+新宿店の企画資料を確認して提出
+https://teams.microsoft.com/l/message/元のメッセージのリンク
+```
+
+- 先頭の内容行をタイトルにし、**貼り付けた全文をメモに保持**します。`タイトル：` / `タスク名：` の行がある場合はその内容をタイトルにします。
+- `期限：` / `期限日：` の行だけを期限として読み取ります。年を含む `2026-10-03`、`2026/10/3`、`2026年10月3日` と、任意の `18:00` に対応。本文に出てくる日付だけから期限を推測しません。
+- 年のない日付や不正な日付は、画面でお知らせします。期限欄で指定してください。時刻がないときは設定の初期値を使います。
+- 本文中のHTTPSのTeamsリンクを補います。Planner自身のリンクや他サイトのリンクをTeamsリンクとして取り込みません。
+- **入力済みの項目は上書きしません。** 内容を差し替える場合は該当欄を空にして取り込むか、直接編集します。種類は自分で選びます。
+- アラーム・完了状態は任意の折りたたみ欄にあります。登録後は通常の一覧・詳細・編集・検索・カレンダー・完了・保管・バックアップで扱えます。
+
+Plannerを経由しても、この版では情報の受け渡しはコピー＆ペーストです。**Plannerにも作業を残したい場合に向いています。** MY仕事管理だけに残すなら、この画面へTeams本文を直接貼り付ければ、Plannerで作成する手間を省けます。MY仕事管理での編集・完了はPlanner側に反映しません。
+
+登録経路は `source: "planner"`、`extensions.planner.importMethod: "manual"` として保持します。手動登録ではPlanner task IDは未設定です。既存のバックアップ形式・保存先・データバージョンは変えていません。
+
 ### アラーム
 
 初期候補は **前日（期限時刻と同じ時刻） / 当日1時間前（期限日時の1時間前）** の2段階で、初期状態はOFFです。ON/OFFと日時をそれぞれ変更できます。「期限から候補日時を再設定」で再計算できます。期限が00:00〜00:59の場合、1時間前は前日の夜になります。期限なしのメモ・あとで確認でも日時を手動で指定できます。
@@ -212,6 +241,7 @@ src/
     backup.js                   JSON書き出し・復元の検証
   integrations/
     teams.js                    手動Teams provider・メッセージ変換
+    planner.js                  手動Planner provider・コピー解析・将来のtask/details変換
     outlook.js                  手動Outlook provider・共通カレンダー変換
     onedrive.js                 将来のOneDrive Repositoryの実装場所
   notifications/alarms.js       アラーム・送信時刻の判定
@@ -219,6 +249,7 @@ src/
     layout.js                   サイド/下部ナビゲーション
     manage.js                   4種類の1行一覧・検索
     item-detail.js              詳細・登録編集フォーム
+    planner-import.js           Plannerから登録・空欄取り込み・クリップボード補助
     schedule.js                 カレンダー・メンバー予定一覧
     members.js                  メンバー詳細・編集
     reservations.js             送信予約一覧・詳細・編集
@@ -232,6 +263,7 @@ tests/                          任意のブラウザ用テスト（公開時は
   index.html                    確認結果画面
   run.js / harness.js            実行・結果表示・検証補助
   domain.test.js                データ・保存・バックアップ等の確認
+  planner.test.js               Planner貼り付け・4種類・将来のAPI入力変換
   static.test.js                相対参照・配信形式・PWA資材確認
 .nojekyll                       GitHub Pages用
 README.md                       使い方・公開・ローカル確認・将来の連携
@@ -267,6 +299,7 @@ README.md                       使い方・公開・ローカル確認・将来
 | 拡張 | 実装場所 / 契約 |
 | --- | --- |
 | Teamsから直接登録・本文自動取得 | `integrations/teams.js` に認証済みのTeams providerを追加。Teams側拡張（メッセージ操作/アプリ等）からの入力を `itemFromTeamsMessage()` に渡す。`plainText` の先頭行→タイトル、全文→本文、`webUrl`→元リンク、ID→`extensions.teams` を変換 |
+| 自分のPlannerタスクの自動取得 | `integrations/planner.js` の `ManualPlannerProvider` と同じ `getMyTasks() / getTaskDetails(taskId)` を持つGraph providerを追加。取得したtaskとdetailsを `itemFromPlannerTask(task, details, options)` へ渡し、通常の `saveItem()` とRepositoryで保存。元task IDで既存情報を照合し、手動編集の上書きルールと重複防止を実装 |
 | Teams長期予約の自動送信 | `ManualTeamsProvider.sendMessage()` を実装するproviderへ差し替え。ブラウザを閉じても実行するには、認証管理・永続キュー・重複送信防止を備えたサーバー側スケジューラーを別途用意。現行の送信予定判定と予約モデルを再利用 |
 | Outlook予定の取得・作成・修正 | `integrations/outlook.js` のproviderへ認証とAPI操作を追加。取得結果を共通`CalendarEvent`（id/title/date/time/type/source/startsAt等）に正規化して `calendarEvents(items, externalEvents)` に統合。現在は `app.js` で手動providerを生成 |
 | 他メンバー予定の取得 | Outlook providerの `getSchedules()` をGraph側の機能に接続し、メンバー`extensions`にユーザーID等を保持。日付別手動予定との優先ルールを決める |
@@ -276,11 +309,13 @@ README.md                       使い方・公開・ローカル確認・将来
 
 Microsoftへの接続時は `capabilities` で使用可能な機能を判断し、許可されていない機能でも現在の手動管理を維持できます。現在の「送信済みにする」は利用者の記録操作です。自動送信版はAPIの成功確認後に状態を変更する実装が必要です。
 
+Plannerの変換境界では、taskのタイトル・UTC期限・完了状態と、detailsの説明本文を通常の管理モデルへ変換します。元のtask / plan / bucket ID、task / detailsのETag、取り込み方法・日時を `extensions.planner` に保持します。Teamsリンクを添付参照から取得する場合はprovider側で正規化し、`options.teamsLink` に渡してください。参考：[Microsoft公式・plannerTask](https://learn.microsoft.com/en-us/graph/api/resources/plannertask?view=graph-rest-1.0)、[Microsoft公式・taskの詳細取得](https://learn.microsoft.com/en-us/graph/api/plannertaskdetails-get?view=graph-rest-1.0)。
+
 ## 動作確認・開発
 
 ブラウザで **http://localhost:4173/tests/** を開くと自動確認が実行されます。公開先に `tests/` もアップロードした場合は `https://ユーザー名.github.io/リポジトリ名/tests/` でも実行できます。Node.js・Python・テスト用パッケージは不要です。テスト画面はアプリの業務データを書き換えません。IndexedDBのテストは独立した一時DBを作成し、終了時に削除します。
 
-期限必須、完了・戻す、日付、検索、アラーム確認、カレンダー統合、3グループの上限、予約状態、バックアップ往復・不正形式拒否、編集中の競合、Teams入力変換、容量エラー時の保存維持、IndexedDBの保存・再読み込み・置き換え・不正更新時の保持を確認します。HTML/manifestの相対参照、SWの全30件の資材、JavaScriptの配信形式とモジュールの読み込みも確認します。
+全18件のブラウザテストで、期限必須、完了・戻す、日付、検索、アラーム、カレンダー、3グループの上限、予約、バックアップ、競合、Teams入力、IndexedDB保存、Plannerのコピー解析・4種類の保存・将来のAPI入力変換を確認します。HTML/manifestの相対参照、SWの全32件の資材、JavaScriptの配信形式とモジュールの読み込みも確認します。
 
 ブラウザ確認では、登録・再読み込み後の保持・検索・完了・未完了戻し・メンバー予定・予約・JSON書き出し/復元・スマートフォン/タブレット幅を確認します。実機Safariでのホーム画面追加は利用する端末で確認してください。
 
