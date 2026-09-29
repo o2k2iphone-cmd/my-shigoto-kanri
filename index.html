@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#233d67">
+  <meta name="description" content="作業、メモ、予定を端末内で管理するMY仕事管理。">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="MY仕事管理">
+  <link rel="icon" type="image/svg+xml" href="./assets/icon.svg">
+  <link rel="apple-touch-icon" href="./assets/apple-touch-icon.png">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="stylesheet" href="./styles.css">
+  <title>MY仕事管理</title>
+</head>
+<body>
+  <a href="#main" class="skip-link">本文へ移動</a>
+  <div id="app"><p class="loading">MY仕事管理を開いています…</p></div>
+  <div id="dialogs"></div>
+  <div id="toast" role="status" aria-live="polite"></div>
+  <noscript>このアプリを使うにはJavaScriptを有効にしてください。</noscript>
+  <script type="module" src="./src/app.js"></script>
+</body>
+</html>

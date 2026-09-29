@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>動作確認 | MY仕事管理</title>
+  <style>
+    body { font: 16px/1.7 system-ui, sans-serif; max-width: 900px; margin: 40px auto; padding: 0 20px; color: #20314c; background: #f3f5f8; }
+    h1 { font-size: 1.5rem; } li { margin: 8px 0; overflow-wrap: anywhere; }
+    .pass { color: #146546; } .fail { color: #b02735; }
+    #summary { padding: 16px; background: white; border: 1px solid #dbe1eb; border-radius: 8px; }
+    a { color: #254f8b; }
+  </style>
+</head>
+<body>
+  <h1>MY仕事管理・動作確認</h1>
+  <p>ブラウザだけで実行します。業務データの保存先への書き込み・削除は行いません。IndexedDBのテストは独立した一時データベースを使用します。</p>
+  <p><a href="../index.html">アプリを開く</a></p>
+  <p id="summary" role="status">確認しています…</p>
+  <ol id="results"></ol>
+  <script type="module" src="./run.js"></script>
+</body>
+</html>

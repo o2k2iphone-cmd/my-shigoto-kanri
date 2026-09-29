@@ -1,0 +1,204 @@
+{
+  "app": "MY仕事管理",
+  "backupVersion": 1,
+  "exportedAt": "2026-09-29T01:48:02.172Z",
+  "data": {
+    "schemaVersion": 1,
+    "items": [
+      {
+        "id": "6e4485fe-5f52-48bd-80d4-28549c1e5a92",
+        "type": "task",
+        "title": "資料提出",
+        "body": "佐藤さん・新宿店・SV部\n商品Aの月次資料を提出。",
+        "dueDate": "2026-10-03",
+        "dueTime": "18:00",
+        "alarms": [],
+        "teamsLink": "https://teams.microsoft.com/l/message/sample-1",
+        "completed": false,
+        "completedAt": null,
+        "archived": false,
+        "originalType": null,
+        "source": "manual",
+        "extensions": {},
+        "createdAt": "2026-09-29T01:48:02.169Z",
+        "updatedAt": "2026-09-29T01:48:02.169Z"
+      },
+      {
+        "id": "451d59d1-2d80-4496-9bd8-6af9615a62ff",
+        "type": "task",
+        "title": "売場の変更内容を確認",
+        "body": "陳列図の最終確認。",
+        "dueDate": "2026-09-28",
+        "dueTime": "18:00",
+        "alarms": [
+          {
+            "id": "f8c0fcb9-9090-41d9-9743-2c873f3af137",
+            "label": "前日",
+            "enabled": true,
+            "at": "2026-09-27T18:00",
+            "acknowledgedAt": null
+          },
+          {
+            "id": "7cc96204-8f95-4d60-af8e-07542e46d30d",
+            "label": "当日1時間前",
+            "enabled": false,
+            "at": "2026-09-28T17:00",
+            "acknowledgedAt": null
+          }
+        ],
+        "teamsLink": "",
+        "completed": false,
+        "completedAt": null,
+        "archived": false,
+        "originalType": null,
+        "source": "manual",
+        "extensions": {},
+        "createdAt": "2026-09-29T01:48:02.172Z",
+        "updatedAt": "2026-09-29T01:48:02.172Z"
+      },
+      {
+        "id": "f5dd7ca3-2a57-4814-9763-49404ba66786",
+        "type": "task",
+        "title": "来月の訪問予定を共有",
+        "body": "",
+        "dueDate": "2026-09-29",
+        "dueTime": "18:00",
+        "alarms": [],
+        "teamsLink": "",
+        "completed": false,
+        "completedAt": null,
+        "archived": false,
+        "originalType": null,
+        "source": "manual",
+        "extensions": {},
+        "createdAt": "2026-09-29T01:48:02.172Z",
+        "updatedAt": "2026-09-29T01:48:02.172Z"
+      },
+      {
+        "id": "16e3ac95-7859-4773-9120-d0fcc689d20c",
+        "type": "memo",
+        "title": "売場変更の注意点",
+        "body": "関連部署と確認してから変更。",
+        "dueDate": "2026-10-03",
+        "dueTime": "18:00",
+        "alarms": [],
+        "teamsLink": "https://teams.microsoft.com/l/message/sample-2",
+        "completed": false,
+        "completedAt": null,
+        "archived": false,
+        "originalType": null,
+        "source": "manual",
+        "extensions": {},
+        "createdAt": "2026-09-29T01:48:02.172Z",
+        "updatedAt": "2026-09-29T01:48:02.172Z"
+      },
+      {
+        "id": "20212817-bbc3-4a46-bd5f-e41ed965aa61",
+        "type": "memo",
+        "title": "店舗連絡先と確認事項",
+        "body": "人名・店舗名も本文から検索できます。",
+        "dueDate": null,
+        "dueTime": null,
+        "alarms": [],
+        "teamsLink": "",
+        "completed": false,
+        "completedAt": null,
+        "archived": false,
+        "originalType": null,
+        "source": "manual",
+        "extensions": {},
+        "createdAt": "2026-09-29T01:48:02.172Z",
+        "updatedAt": "2026-09-29T01:48:02.172Z"
+      },
+      {
+        "id": "d8e334e1-6ffd-4aa4-a5e5-631c0721e908",
+        "type": "review",
+        "title": "来週の企画内容",
+        "body": "次回の会議前に確認。",
+        "dueDate": "2026-10-03",
+        "dueTime": "18:00",
+        "alarms": [],
+        "teamsLink": "https://teams.microsoft.com/l/message/sample-3",
+        "completed": false,
+        "completedAt": null,
+        "archived": false,
+        "originalType": null,
+        "source": "manual",
+        "extensions": {},
+        "createdAt": "2026-09-29T01:48:02.172Z",
+        "updatedAt": "2026-09-29T01:48:02.172Z"
+      },
+      {
+        "id": "c95f1c7e-e82a-4d9e-8e8a-929a249b3f30",
+        "type": "archive",
+        "title": "会議記録",
+        "body": "会議で決まった内容を保管。",
+        "dueDate": "2026-09-25",
+        "dueTime": "18:00",
+        "alarms": [],
+        "teamsLink": "",
+        "completed": true,
+        "completedAt": "2026-09-29T01:48:02.172Z",
+        "archived": true,
+        "originalType": "task",
+        "source": "manual",
+        "extensions": {},
+        "createdAt": "2026-09-29T01:48:02.172Z",
+        "updatedAt": "2026-09-29T01:48:02.172Z"
+      }
+    ],
+    "members": [
+      {
+        "id": "d73660d4-7a1c-4636-89f0-8bf38c027716",
+        "name": "山田",
+        "group": "sv",
+        "schedules": {
+          "2026-09-29": "休み"
+        },
+        "extensions": {},
+        "updatedAt": "2026-09-29T01:48:02.172Z"
+      },
+      {
+        "id": "d5a37b6d-cac5-4b48-bb2d-98f8621376cf",
+        "name": "佐藤",
+        "group": "sv",
+        "schedules": {
+          "2026-09-29": "9:00 会議\n13:00 店舗訪問"
+        },
+        "extensions": {},
+        "updatedAt": "2026-09-29T01:48:02.172Z"
+      },
+      {
+        "id": "4a70f1aa-70a4-4c79-acc1-913a026cd623",
+        "name": "鈴木",
+        "group": "sv",
+        "schedules": {
+          "2026-09-29": ""
+        },
+        "extensions": {},
+        "updatedAt": "2026-09-29T01:48:02.172Z"
+      }
+    ],
+    "reservations": [
+      {
+        "id": "cbc2feb1-4d00-48c8-aa85-28a38e88a10c",
+        "groupName": "SV部 連絡用グループ",
+        "scheduledAt": "2026-09-28T09:00",
+        "body": "来週の打合せについて\n詳細をご確認ください。",
+        "teamsLink": "",
+        "status": "pending",
+        "sentAt": null,
+        "extensions": {},
+        "createdAt": "2026-09-29T01:48:02.172Z",
+        "updatedAt": "2026-09-29T01:48:02.172Z"
+      }
+    ],
+    "settings": {
+      "defaultDueTime": "18:00",
+      "alarmsEnabled": true,
+      "weekStartsMonday": true,
+      "lastBackupAt": null
+    },
+    "updatedAt": "2026-09-29T01:48:02.169Z"
+  }
+}
