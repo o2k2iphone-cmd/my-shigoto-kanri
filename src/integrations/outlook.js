@@ -1,8 +1,7 @@
 import { dueAt } from '../domain/model.js';
 export class ManualOutlookProvider {
-  capabilities = { readCalendar: false, writeCalendar: false, getSchedule: false };
+  capabilities = { readCalendar: false, writeCalendar: false };
   async getEvents() { return []; }
-  async getSchedules() { return []; }
 }
 /** ローカル期限と将来のOutlook予定は共通CalendarEventとして表示します。 */
 export function calendarEvents(items, externalEvents = []) {

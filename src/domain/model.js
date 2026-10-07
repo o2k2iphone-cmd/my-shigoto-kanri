@@ -1,6 +1,5 @@
 export const TYPES = { task: '期限付き作業', memo: 'メモ', review: 'あとで確認', archive: 'アーカイブ保管' };
-export const GROUPS = { sv: { label: 'SV部', limit: 50 }, gn: { label: 'GN SV', limit: 20 }, other: { label: 'その他', limit: 20 } };
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 export const id = () => crypto.randomUUID();
 export function dateKey(value = new Date()) {
   const d = value instanceof Date ? value : new Date(value);
@@ -10,8 +9,20 @@ export function localDateTime(value) {
   const d = value instanceof Date ? value : new Date(value);
   return `${dateKey(d)}T${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
+const japanDateFormatter = new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit' });
+export function japanDateKey(value = Date.now()) {
+  const parts = Object.fromEntries(japanDateFormatter.formatToParts(new Date(value)).map(part => [part.type, part.value]));
+  return `${parts.year}-${parts.month}-${parts.day}`;
+}
+export function isImportedDateDeadline(item) { return item.source === 'microsoft-todo' && !!item.dueDate; }
 export function dueAt(item) { return item.dueDate ? new Date(`${item.dueDate}T${item.dueTime || '18:00'}`).getTime() : Infinity; }
-export function isOverdue(item, now = Date.now()) { return !item.archived && !item.completed && dueAt(item) < now; }
+export function isOverdue(item, now = Date.now()) {
+  if (item.archived || item.completed || !item.dueDate) return false;
+  return isImportedDateDeadline(item) ? item.dueDate < japanDateKey(now) : dueAt(item) < now;
+}
+export function isDueToday(item, now = Date.now()) {
+  return !item.archived && !item.completed && isImportedDateDeadline(item) && item.dueDate === japanDateKey(now);
+}
 export function shortDate(date) { return date ? `${Number(date.slice(5, 7))}月${Number(date.slice(8, 10))}日` : ''; }
 export function defaultAlarms(date, time = '18:00') {
   if (!date) return [ { id: id(), label: '前日', enabled: false, at: '', acknowledgedAt: null }, { id: id(), label: '当日1時間前', enabled: false, at: '', acknowledgedAt: null } ];
@@ -19,7 +30,7 @@ export function defaultAlarms(date, time = '18:00') {
   const previous = new Date(due); previous.setDate(previous.getDate() - 1);
   return [ { id: id(), label: '前日', enabled: false, at: localDateTime(previous), acknowledgedAt: null }, { id: id(), label: '当日1時間前', enabled: false, at: localDateTime(new Date(due.getTime() - 3600000)), acknowledgedAt: null } ];
 }
-export function emptyState() { return { schemaVersion: SCHEMA_VERSION, items: [], members: [], reservations: [], settings: { defaultDueTime: '18:00', alarmsEnabled: true, weekStartsMonday: true, lastBackupAt: null }, updatedAt: new Date().toISOString() }; }
+export function emptyState() { return { schemaVersion: SCHEMA_VERSION, items: [], reservations: [], reservationDeletionHistory: [], jsonDeletionHistory: [], settings: { defaultDueTime: '18:00', alarmsEnabled: true, weekStartsMonday: true, lastBackupAt: null, todoImportFolderName: '', todoImportTimezone: null }, updatedAt: new Date().toISOString() }; }
 export function createItem(input) {
   const now = new Date().toISOString();
   return validateItem({ id: id(), type: 'task', title: '', body: '', dueDate: null, dueTime: null, alarms: [], teamsLink: '', completed: false, completedAt: null, archived: false, originalType: null, source: 'manual', extensions: {}, createdAt: now, updatedAt: now, ...input });
@@ -28,11 +39,14 @@ export function completeItem(item, completed = true, now = new Date().toISOStrin
   if (completed) return validateItem({ ...item, originalType: item.type === 'archive' ? item.originalType || 'task' : item.type, type: 'archive', archived: true, completed: true, completedAt: now, updatedAt: now });
   return validateItem({ ...item, type: item.originalType || 'task', archived: false, completed: false, completedAt: null, updatedAt: now });
 }
-export function searchItems(items, query = '', type = 'all') {
+export function searchItems(items, query = '', type = 'all', now = Date.now()) {
   const tokens = query.normalize('NFKC').trim().toLocaleLowerCase('ja').split(/\s+/).filter(Boolean);
-  return items.filter(item => (type === 'all' || item.type === type) && tokens.every(token => [item.title, item.body, item.dueDate, shortDate(item.dueDate), TYPES[item.type], item.type === 'archive' ? 'アーカイブ' : '', item.teamsLink].join(' ').normalize('NFKC').toLocaleLowerCase('ja').includes(token)));
+  return items.filter(item => (type === 'all' || item.type === type) && tokens.every(token => [item.title, item.body, item.dueDate, shortDate(item.dueDate), TYPES[item.type], item.type === 'archive' ? 'アーカイブ' : '', item.teamsLink, isOverdue(item, now) ? '期限超過' : isDueToday(item, now) ? '本日期日' : ''].join(' ').normalize('NFKC').toLocaleLowerCase('ja').includes(token)));
 }
-export function sortItems(items) { return [...items].sort((a, b) => dueAt(a) - dueAt(b) || b.updatedAt.localeCompare(a.updatedAt)); }
+export function sortItems(items, now = Date.now()) {
+  const overdue = new Map(items.map(item => [item.id, isOverdue(item, now)]));
+  return [...items].sort((a, b) => Number(overdue.get(b.id)) - Number(overdue.get(a.id)) || dueAt(a) - dueAt(b) || b.updatedAt.localeCompare(a.updatedAt));
+}
 export function validateDate(value, name = '日付') {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value || '')) throw new Error(`${name}を正しく入力してください。`);
   const d = new Date(`${value}T12:00:00`);
@@ -79,14 +93,21 @@ export function validateItem(item) {
   });
   uniqueIds(alarms);
   if (item.originalType !== null && !['task', 'memo', 'review'].includes(item.originalType)) throw new Error('元の種類が正しくありません。');
-  return { id: text(item.id, 'ID', 100, true), type: item.type, title: text(item.title, 'タイトル', 200, true).trim(), body: text(item.body, '本文', 50000), dueDate, dueTime, alarms, teamsLink: text(item.teamsLink, 'Teamsリンク', 4000), completed: item.completed, completedAt: timestamp(item.completedAt, '完了日', true), archived: item.archived, originalType: item.originalType, source: text(item.source, '作成元', 100, true), extensions: extensionObject(item.extensions), createdAt: timestamp(item.createdAt, '作成日'), updatedAt: timestamp(item.updatedAt, '更新日') };
+  const extensions = extensionObject(item.extensions);
+  if (item.source === 'microsoft-todo' && extensions.microsoftTodo) {
+    const meta = extensions.microsoftTodo;
+    extensions.microsoftTodo = { ...meta, externalId: text(meta.externalId, 'To Do ID', 1000, true), sourceFileName: sourceFileName(meta.sourceFileName), sourceDueDate: meta.sourceDueDate == null ? null : text(meta.sourceDueDate, '取込元期限', 1000), importedAt: timestamp(meta.importedAt ?? null, '取込日時', true), completedAt: timestamp(item.completedAt, '完了日', true), deleteRequestedAt: timestamp(meta.deleteRequestedAt ?? null, '削除依頼日', true) };
+  }
+  return { id: text(item.id, 'ID', 100, true), type: item.type, title: text(item.title, 'タイトル', 200, true).trim(), body: text(item.body, '本文', 50000), dueDate, dueTime, alarms, teamsLink: text(item.teamsLink, 'Teamsリンク', 4000), completed: item.completed, completedAt: timestamp(item.completedAt, '完了日', true), archived: item.archived, originalType: item.originalType, source: text(item.source, '作成元', 100, true), extensions, createdAt: timestamp(item.createdAt, '作成日'), updatedAt: timestamp(item.updatedAt, '更新日') };
 }
-export function validateMember(member) {
-  if (!Object.hasOwn(GROUPS, member.group)) throw new Error('メンバーのグループが正しくありません。');
-  if (!member.schedules || typeof member.schedules !== 'object' || Array.isArray(member.schedules)) throw new Error('予定が正しくありません。');
-  const schedules = {};
-  for (const [date, body] of Object.entries(member.schedules)) { validateDate(date); schedules[date] = text(body, 'メンバー予定', 10000); }
-  return { id: text(member.id, 'メンバーID', 100, true), name: text(member.name, '名前', 100, true).trim(), group: member.group, schedules, extensions: extensionObject(member.extensions), updatedAt: timestamp(member.updatedAt, '更新日') };
+function sourceFileName(value) {
+  if (value == null || value === '') return null;
+  text(value, '取込元ファイル名', 1024, true);
+  if (/[\\/\u0000]/.test(value)) throw new Error('取込元ファイル名が正しくありません。');
+  return value;
+}
+function validateDeletionHistory(row) {
+  return { externalId: text(row.externalId, 'To Do ID', 1000, true), sourceFileName: sourceFileName(row.sourceFileName), deleteRequestedAt: timestamp(row.deleteRequestedAt, '削除依頼日'), completedAt: timestamp(row.completedAt ?? null, '完了日', true) };
 }
 export function validateReservation(r) {
   if (!['pending', 'sent'].includes(r.status)) throw new Error('予約の状態が正しくありません。');
@@ -96,12 +117,16 @@ export function validateReservation(r) {
 }
 function uniqueIds(entries) { const ids = new Set(); for (const entry of entries) { if (ids.has(entry.id)) throw new Error('重複するIDがあります。'); ids.add(entry.id); } }
 export function validateState(data) {
-  if (!data || data.schemaVersion !== SCHEMA_VERSION) throw new Error('このアプリで使えるバージョンのデータではありません。');
-  for (const key of ['items', 'members', 'reservations']) if (!Array.isArray(data[key]) || data[key].length > 20000) throw new Error('データ形式または件数を確認してください。');
-  const items = data.items.map(validateItem), members = data.members.map(validateMember), reservations = data.reservations.map(validateReservation);
-  uniqueIds(items); uniqueIds(members); uniqueIds(reservations);
-  for (const [group, { label, limit }] of Object.entries(GROUPS)) if (members.filter(m => m.group === group).length > limit) throw new Error(`${label}は最大${limit}名です。`);
+  if (!data || ![1, SCHEMA_VERSION].includes(data.schemaVersion)) throw new Error('このアプリで使えるバージョンのデータではありません。');
+  // 旧形式の不要な項目は読み捨て、管理データと送信予約を移行します。
+  const history = data.jsonDeletionHistory ?? [], reservationHistory = data.reservationDeletionHistory ?? [];
+  for (const rows of [data.items, data.reservations, history, reservationHistory]) if (!Array.isArray(rows) || rows.length > 20000) throw new Error('データ形式または件数を確認してください。');
+  const items = data.items.map(validateItem), reservations = data.reservations.map(validateReservation), jsonDeletionHistory = history.map(validateDeletionHistory);
+  const reservationDeletionHistory = reservationHistory.map(row => ({ ...validateReservation(row), deletedAt: timestamp(row.deletedAt, '予約削除日') }));
+  uniqueIds(items); uniqueIds([...reservations, ...reservationDeletionHistory]); uniqueIds(jsonDeletionHistory.map(row => ({ id: row.externalId })));
   const s = data.settings;
   if (!s || typeof s.alarmsEnabled !== 'boolean' || typeof s.weekStartsMonday !== 'boolean') throw new Error('設定が正しくありません。');
-  return { schemaVersion: SCHEMA_VERSION, items, members, reservations, settings: { defaultDueTime: validateTime(s.defaultDueTime), alarmsEnabled: s.alarmsEnabled, weekStartsMonday: s.weekStartsMonday, lastBackupAt: timestamp(s.lastBackupAt, 'バックアップ日', true) }, updatedAt: timestamp(data.updatedAt, '更新日') };
+  const todoImportTimezone = s.todoImportTimezone ?? null;
+  if (![null, 'utc', 'jst'].includes(todoImportTimezone)) throw new Error('取込日時の設定が正しくありません。');
+  return { schemaVersion: SCHEMA_VERSION, items, reservations, reservationDeletionHistory, jsonDeletionHistory, settings: { defaultDueTime: validateTime(s.defaultDueTime), alarmsEnabled: s.alarmsEnabled, weekStartsMonday: s.weekStartsMonday, lastBackupAt: timestamp(s.lastBackupAt, 'バックアップ日', true), todoImportFolderName: text(s.todoImportFolderName ?? '', '取込フォルダー名', 1024), todoImportTimezone }, updatedAt: timestamp(data.updatedAt, '更新日') };
 }

@@ -4,7 +4,7 @@ import { itemForm } from './item-detail.js';
 export function plannerForm(settings) {
   const helper = `<section class="planner-paste"><label for="planner-paste-text">まとめて貼り付け（任意）</label><textarea id="planner-paste-text" rows="3" maxlength="50000" placeholder="資料提出&#10;期限：2026-10-03&#10;作業のメモやTeamsリンク"></textarea><p class="field-hint">先頭行をタイトル、全文をメモへ。年を含む「期限：」とTeamsリンクも読み取ります。</p><div class="planner-paste-actions"><button type="button" class="button small" id="planner-apply-paste">空欄に取り込む</button><button type="button" class="text-button" id="planner-read-clipboard">クリップボードから取り込む</button></div><p id="planner-paste-status" role="status" class="field-hint" aria-live="polite"></p></section>`;
   const result = itemForm(null, settings, plannerRegistrationDefaults(), {
-    title: 'Plannerから登録', compact: true,
+    title: '手動取込（Plannerのコピー）', compact: true,
     introduction: '<p class="planner-intro">Plannerのタスク名・メモをコピーして登録します。Teams本文を直接貼り付けても使えます。</p>',
     extraFields: helper,
   });

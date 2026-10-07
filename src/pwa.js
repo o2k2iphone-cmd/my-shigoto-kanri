@@ -7,9 +7,26 @@ export async function registerPWA(onStatus, onMessage) {
   if (!('serviceWorker' in navigator) || !window.isSecureContext) { status = 'オフライン利用にはHTTPSまたはlocalhostが必要です。'; onStatus(); return; }
   try {
     const registration = await navigator.serviceWorker.register('./sw.js', { scope: './' });
+    // 短時間の再公開でも、サーバー上の更新をその場で確認する。
+    await registration.update();
     await navigator.serviceWorker.ready;
     status = 'オフラインの準備ができました。'; onStatus();
-    const showUpdate = () => { if (registration.waiting && navigator.serviceWorker.controller) onMessage('アプリの更新があります。編集を保存して、すべてのアプリ画面を閉じて開き直してください。'); };
+    const showUpdate = () => {
+      if (!registration.waiting || !navigator.serviceWorker.controller || document.querySelector('#pwa-update-banner')) return;
+      onMessage('アプリの更新があります。編集を保存してから更新してください。');
+      const banner = document.createElement('div');
+      banner.id = 'pwa-update-banner';
+      banner.className = 'pwa-update-banner';
+      banner.innerHTML = '<span>アプリの更新があります。編集中の内容を保存してから更新してください。</span><button type="button" class="button small primary">アプリを更新</button>';
+      banner.querySelector('button').addEventListener('click', () => {
+        const waiting = registration.waiting;
+        if (!waiting) { banner.remove(); return; }
+        banner.querySelector('button').disabled = true;
+        navigator.serviceWorker.addEventListener('controllerchange', () => location.reload(), { once: true });
+        waiting.postMessage({ type: 'ACTIVATE_UPDATE' });
+      });
+      document.body.append(banner);
+    };
     showUpdate();
     registration.addEventListener('updatefound', () => registration.installing?.addEventListener('statechange', showUpdate));
   } catch (error) { console.error(error); status = 'オフラインの準備に失敗しました。接続時に再読み込みしてください。'; onStatus(); }

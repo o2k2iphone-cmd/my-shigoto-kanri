@@ -23,10 +23,16 @@ export class IndexedDBRepository extends Repository {
     return new IndexedDBRepository(db);
   }
   async load() { return new Promise((resolve, reject) => {
-    const transaction = this.db.transaction('documents', 'readonly');
-    const request = transaction.objectStore('documents').get('state');
-    request.onsuccess = () => { try { resolve(request.result ? validateState(request.result) : emptyState()); } catch (error) { reject(error); } };
-    request.onerror = () => reject(request.error);
+    const transaction = this.db.transaction('documents', 'readwrite');
+    const store = transaction.objectStore('documents');
+    const request = store.get('state'); let state, failure;
+    request.onsuccess = () => { try {
+      state = request.result ? validateState(request.result) : emptyState();
+      if (request.result && request.result.schemaVersion !== state.schemaVersion) store.put(state, 'state');
+    } catch (error) { failure = error; transaction.abort(); } };
+    transaction.oncomplete = () => resolve(state);
+    transaction.onerror = () => reject(failure || transaction.error);
+    transaction.onabort = () => reject(failure || transaction.error);
   }); }
   async update(mutator) { return new Promise((resolve, reject) => {
     const transaction = this.db.transaction('documents', 'readwrite');
@@ -43,7 +49,13 @@ export class IndexedDBRepository extends Repository {
 }
 export class LocalStorageRepository extends Repository {
   constructor(storage = globalThis.localStorage) { super(); this.kind = 'LocalStorage'; this.storage = storage; }
-  async load() { const value = this.storage.getItem(KEY); return value ? validateState(JSON.parse(value)) : emptyState(); }
+  async load() {
+    const value = this.storage.getItem(KEY);
+    if (!value) return emptyState();
+    const original = JSON.parse(value), state = validateState(original);
+    if (original.schemaVersion !== state.schemaVersion) this.storage.setItem(KEY, JSON.stringify(state));
+    return state;
+  }
   async update(mutator) {
     const write = async () => { const next = validateState(mutator(await this.load())); next.updatedAt = new Date().toISOString(); this.storage.setItem(KEY, JSON.stringify(next)); return next; };
     return globalThis.navigator?.locks ? navigator.locks.request(KEY, write) : write();
